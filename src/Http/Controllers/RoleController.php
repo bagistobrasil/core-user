@@ -5,25 +5,21 @@ namespace Webkul\User\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
-use Webkul\User\Models\Admin;
 use Webkul\User\Models\Role;
-use Webkul\User\Http\Requests\UserForm;
 
 /**
- * Admin user controller
+ * Admin user role controller
  *
  * @author    Jitendra Singh <jitendra@webkul.com>
  * @copyright 2018 Webkul Software Pvt Ltd (http://www.webkul.com)
  */
-class UserController extends Controller
+class RoleController extends Controller
 {
     protected $_config;
 
     public function __construct()
     {
         $this->_config = request('_config');
-
-        $this->middleware('guest', ['except' => 'destroy']);
     }
 
     /**
@@ -43,22 +39,20 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = Role::all();
-
-        return view($this->_config['view'], compact('roles'));
+        return view($this->_config['view'], compact('roleItems'));
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Webkul\User\Http\Requests\UserForm  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(UserForm $request)
+    public function store(Request $request)
     {
-        Admin::create(request()->all());
+        Role::create(request()->all());
 
-        session()->flash('success', 'User created successfully.');
+        session()->flash('success', 'Role created successfully.');
 
         return redirect()->route($this->_config['redirect']);
     }
@@ -71,26 +65,25 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        $user = Admin::findOrFail($id);
-        $roles = Role::all();
+        $role = Role::findOrFail($id);
 
-        return view($this->_config['view'], compact('user', 'roles'));
+        return view($this->_config['view'], compact('role'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Webkul\User\Http\Requests\UserForm  $request
+     * @param  \Illuminate\Http\Request $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UserForm $request, $id)
+    public function update(Request $request, $id)
     {
-        $user = Admin::findOrFail($id);
+        $role = Role::findOrFail($id);
 
-        $user->update(request(['name', 'email', 'password']));
+        $role->update(request(['name', 'description', 'permissions']));
 
-        session()->flash('success', 'User updated successfully.');
+        session()->flash('success', 'Role updated successfully.');
 
         return redirect()->route($this->_config['redirect']);
     }
