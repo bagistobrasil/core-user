@@ -4,17 +4,15 @@ namespace Webkul\User\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Webkul\User\Repositories\AdminRepository as Admin;
 use Webkul\User\Repositories\RoleRepository as Role;
-use Webkul\User\Http\Requests\UserForm;
 
 /**
- * Admin user controller
+ * Admin user role controller
  *
  * @author    Jitendra Singh <jitendra@webkul.com>
  * @copyright 2018 Webkul Software Pvt Ltd (http://www.webkul.com)
  */
-class UserController extends Controller
+class RoleController extends Controller
 {
     /**
      * Contains route related configuration
@@ -22,13 +20,6 @@ class UserController extends Controller
      * @var array
      */
     protected $_config;
-    
-    /**
-     * AdminRepository object
-     *
-     * @var array
-     */
-    protected $admin;
     
     /**
      * RoleRepository object
@@ -40,19 +31,14 @@ class UserController extends Controller
     /**
      * Create a new controller instance.
      *
-     * @param  Webkul\User\Repositories\AdminRepository $admin
      * @param  Webkul\User\Repositories\RoleRepository $role
      * @return void
      */
-    public function __construct(Admin $admin, Role $role)
+    public function __construct(Role $role)
     {
-        $this->admin = $admin;
-
         $this->role = $role;
 
         $this->_config = request('_config');
-
-        $this->middleware('guest', ['except' => 'destroy']);
     }
 
     /**
@@ -72,22 +58,25 @@ class UserController extends Controller
      */
     public function create()
     {
-        $roles = $this->role->all();
-
-        return view($this->_config['view'], compact('roles'));
+        return view($this->_config['view'], compact('roleItems'));
     }
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Webkul\User\Http\Requests\UserForm  $request
+     * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(UserForm $request)
+    public function store(Request $request)
     {
-        $this->admin->create(request()->all());
+        $this->validate(request(), [
+            'name' => 'required',
+            'permission_type' => 'required',
+        ]);
 
-        session()->flash('success', 'User created successfully.');
+        $this->role->create(request()->all());
+
+        session()->flash('success', 'Role created successfully.');
 
         return redirect()->route($this->_config['redirect']);
     }
@@ -100,30 +89,28 @@ class UserController extends Controller
      */
     public function edit($id)
     {
-        $user = $this->admin->find($id);
+        $role = $this->role->find($id);
 
-        $roles = $this->role->all();
-
-        return view($this->_config['view'], compact('user', 'roles'));
+        return view($this->_config['view'], compact('role'));
     }
 
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Webkul\User\Http\Requests\UserForm  $request
+     * @param  \Illuminate\Http\Request $request
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(UserForm $request, $id)
+    public function update(Request $request, $id)
     {
-        $data = request()->all();
+        $this->validate(request(), [
+            'name' => 'required',
+            'permission_type' => 'required',
+        ]);
+        
+        $this->role->update(request()->all(), $id);
 
-        if(!$data['password'])
-            unset($data['password']);
-
-        $this->admin->update($data, $id);
-
-        session()->flash('success', 'User updated successfully.');
+        session()->flash('success', 'Role updated successfully.');
 
         return redirect()->route($this->_config['redirect']);
     }

@@ -4,15 +4,20 @@ namespace Webkul\User\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Foundation\Auth\SendsPasswordResetEmails;
+use Illuminate\Support\Facades\Password;
 
 /**
- * Admin user session controller
+ * Admin forget password controller
  *
  * @author    Jitendra Singh <jitendra@webkul.com>
  * @copyright 2018 Webkul Software Pvt Ltd (http://www.webkul.com)
  */
-class SessionController extends Controller
+class ForgetPasswordController extends Controller
 {
+
+    use SendsPasswordResetEmails;
+
     /**
      * Contains route related configuration
      *
@@ -28,8 +33,6 @@ class SessionController extends Controller
     public function __construct()
     {
         $this->_config = request('_config');
-
-        $this->middleware('guest', ['except' => 'destroy']);
     }
 
     /**
@@ -50,30 +53,33 @@ class SessionController extends Controller
     public function store()
     {
         $this->validate(request(), [
-            'email' => 'required|email',
-            'password' => 'required'
+            'email' => 'required|email'
         ]);
 
-        $remember = request('remember');
-        if (! auth()->guard('admin')->attempt(request(['email', 'password']), $remember)) {
-            session()->flash('error', 'Please check your credentials and try again.');
+        $response = $this->broker()->sendResetLink(
+            request(['email'])
+        );
+
+        if($response == Password::RESET_LINK_SENT) {
+            session()->flash('success', trans($response));
 
             return back();
         }
 
-        return redirect()->route($this->_config['redirect']);
+        return back()
+            ->withInput(request(['email']))
+            ->withErrors(
+                ['email' => trans($response)]
+            );
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Get the broker to be used during password reset.
      *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Contracts\Auth\PasswordBroker
      */
-    public function destroy($id)
+    public function broker()
     {
-        auth()->guard('admin')->logout();
-
-        return redirect()->route($this->_config['redirect']);
+        return Password::broker('admins');
     }
 }
